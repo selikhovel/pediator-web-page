@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Врач-педиатр — консультации онлайн, выезд на дом, приём в клинике</title>
+<meta name="description" content="Педиатр. Онлайн-консультации, выезд на дом, приём в клинике. Разбор анализов, лечение без лишних назначений.">
+<!-- Шрифты с CDN — только чтобы эталон открывался двойным кликом, без сборки.
+     В Astro это @fontsource и самохостинг: Google Fonts из РФ грузится нестабильно.
+     См. docs/design-system.md §2. Переносить это подключение нельзя. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Golos+Text:wght@400;500;600&family=Caveat:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bordeaux:#4A0D18;
+  --bordeaux-deep:#2E0710;
+  --crimson:#D81E2C;
+  --crimson-ink:#C81627;  /* тот же акцент для текста мельче 24px на светлом */
+  --rose:#E9718F;
+  --blush:#FBE5EA;
+  --bone:#EDEAE5;
+  --white:#fff;
+
+  --display:'Oswald',system-ui,sans-serif;
+  --text:'Golos Text',system-ui,sans-serif;
+  --hand:'Caveat',cursive;
+
+  --gut:20px;
+  --max:1180px;
+}
+@media(min-width:900px){:root{--gut:48px}}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bone);color:var(--bordeaux-deep);
+  font-family:var(--text);font-size:16px;line-height:1.65;
+}
+img{max-width:100%;display:block}
+a{color:inherit}
+
+.wrap{max-width:var(--max);margin:0 auto;padding-left:var(--gut);padding-right:var(--gut)}
+section{padding:64px 0}
+@media(min-width:900px){section{padding:104px 0}}
+
+/* ---------- типографика ---------- */
+.d-xl,.d-l{
+  font-family:var(--display);font-weight:700;text-transform:uppercase;
+  letter-spacing:-.01em;margin:0;
+}
+.d-xl{font-size:clamp(38px,10.5vw,72px);line-height:.95}
+.d-l{font-size:clamp(28px,6.2vw,48px);line-height:1.0}
+h3{font-family:var(--display);font-weight:600;font-size:clamp(20px,4.4vw,28px);line-height:1.15;margin:0 0 12px}
+p{margin:0 0 16px;max-width:34rem}
+.lead{font-size:18px}
+
+/* фирменный приём: вторая строка светлым курсивом в скобках */
+.sub{
+  display:block;font-family:var(--text);font-weight:400;font-style:italic;
+  text-transform:none;letter-spacing:0;
+  font-size:clamp(16px,3.8vw,22px);line-height:1.35;margin-top:14px;
+}
+.br{color:var(--crimson-ink);font-style:normal}
+.on-dark .br{color:var(--rose)}
+
+/* текст только для скринридеров */
+.vh{
+  position:absolute;width:1px;height:1px;overflow:hidden;
+  clip-path:inset(50%);white-space:nowrap;
+}
+
+/* плейсхолдеры — то, что заполняем после встречи */
+.ph{
+  border-bottom:2px dotted var(--crimson);
+  padding-bottom:1px;
+}
+.on-dark .ph{border-bottom-color:var(--rose)}
+
+/* ---------- плашки ---------- */
+.pills{display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:0 0 24px;list-style:none}
+.pill{
+  font-size:14px;font-weight:500;line-height:1.2;
+  padding:7px 15px;border-radius:999px;
+  background:var(--blush);color:var(--bordeaux);white-space:nowrap;
+}
+.on-dark .pill{background:rgba(255,255,255,.1);color:var(--white)}
+
+/* ---------- кнопки ---------- */
+.btn{
+  display:inline-block;font-family:var(--display);font-weight:600;font-size:17px;
+  text-transform:uppercase;letter-spacing:.02em;text-decoration:none;
+  padding:15px 28px;border-radius:2px;transition:transform .12s ease;
+}
+.btn:active{transform:translateY(1px)}
+.btn-p{background:var(--crimson);color:var(--white)}
+.on-dark .btn-p{background:var(--white);color:var(--bordeaux)}
+.btn-s{background:transparent;color:var(--white);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.45)}
+:focus-visible{outline:3px solid var(--crimson);outline-offset:3px}
+.on-dark :focus-visible{outline-color:var(--rose)}
+
+/* ---------- фото-плейсхолдер ---------- */
+.photo{
+  position:relative;background:#8d8d8d;
+  background-image:linear-gradient(135deg,#a3a3a3 0%,#6e6e6e 55%,#4a4a4a 100%);
+  filter:grayscale(1);aspect-ratio:3/4;overflow:hidden;
+}
+.photo::after{ /* сетка-разметка из ленты */
+  content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(to right,transparent 33.2%,rgba(216,30,44,.55) 33.2%,rgba(216,30,44,.55) 33.5%,transparent 33.5%),
+    linear-gradient(to right,transparent 66.5%,rgba(216,30,44,.55) 66.5%,rgba(216,30,44,.55) 66.8%,transparent 66.8%),
+    linear-gradient(to bottom,transparent 49.8%,rgba(216,30,44,.55) 49.8%,rgba(216,30,44,.55) 50.1%,transparent 50.1%);
+}
+.photo span{
+  position:absolute;left:12px;bottom:10px;z-index:2;
+  font-family:var(--hand);font-size:20px;color:var(--white);
+}
+
+/* ---------- пропустить навигацию ---------- */
+.skip{
+  position:absolute;left:-9999px;top:0;z-index:10;
+  background:var(--white);color:var(--bordeaux);
+  font-family:var(--display);font-weight:600;padding:12px 18px;
+}
+.skip:focus{left:0}
+
+/* ---------- шапка ---------- */
+.top{background:var(--bordeaux);color:var(--white)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:16px;padding-bottom:16px}
+.mark{font-family:var(--display);font-weight:600;font-size:15px;text-transform:uppercase;letter-spacing:.04em;text-decoration:none}
+.top a.tel{font-family:var(--display);font-weight:600;font-size:16px;text-decoration:none;white-space:nowrap}
+
+/* ---------- hero ---------- */
+.hero{background:var(--bordeaux);color:var(--white);padding-top:44px}
+.hero-grid{display:grid;gap:36px}
+@media(min-width:900px){
+  .hero-grid{grid-template-columns:1.15fr .85fr;align-items:center;gap:64px}
+}
+.hero .photo{max-width:380px}
+.hero .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.hero p{color:rgba(255,255,255,.82)}
+
+/* ---------- форматы приёма ---------- */
+.formats{background:var(--white)}
+.cards{display:grid;gap:16px;margin-top:36px}
+@media(min-width:760px){.cards{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--blush);padding:28px 24px 26px;display:flex;flex-direction:column}
+.card .price{font-family:var(--display);font-weight:700;font-size:30px;margin:auto 0 0;padding-top:20px}
+.card p{font-size:15px;margin-bottom:8px}
+.card .when{font-size:14px;color:#6b4650;margin:0}
+
+/* ---------- о враче ---------- */
+.about{background:var(--bone)}
+.about-grid{display:grid;gap:36px}
+@media(min-width:900px){.about-grid{grid-template-columns:.8fr 1.2fr;gap:56px;align-items:start}}
+.creds{margin:28px 0 0;padding:0;border-top:1px solid rgba(46,7,16,.18)}
+.creds>div{display:grid;grid-template-columns:1fr;gap:2px;padding:14px 0;border-bottom:1px solid rgba(46,7,16,.18)}
+@media(min-width:600px){.creds>div{grid-template-columns:150px 1fr;gap:20px;align-items:baseline}}
+.creds dt{font-family:var(--display);font-weight:500;font-size:14px;text-transform:uppercase;letter-spacing:.03em;color:var(--crimson-ink)}
+.creds dd{margin:0}
+
+/* ---------- с чем обращаются ---------- */
+.topics{background:var(--bordeaux);color:var(--white)}
+.tags{display:flex;flex-wrap:wrap;gap:10px;margin:32px 0 0;padding:0;list-style:none}
+.tag{font-size:16px;padding:10px 18px;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
+
+/* ---------- как проходит приём ---------- */
+.steps{background:var(--white)}
+.steps-list{list-style:none;margin:0;padding:0}
+.step{display:grid;grid-template-columns:44px 1fr;gap:18px;padding:24px 0;border-top:1px solid rgba(46,7,16,.15)}
+.step:last-child{border-bottom:1px solid rgba(46,7,16,.15)}
+.step .n{font-family:var(--display);font-weight:700;font-size:26px;color:var(--crimson);line-height:1}
+.step p{margin:0;font-size:16px}
+
+/* ---------- мифы ---------- */
+.myths{background:var(--blush)}
+.myth-list{list-style:none;margin:30px 0 0;padding:0}
+.myth{padding:22px 0;border-top:1px solid rgba(74,13,24,.2)}
+.myth:last-child{border-bottom:1px solid rgba(74,13,24,.2)}
+.myth-claim{margin:0}
+.myth s{
+  font-family:var(--display);font-weight:600;font-size:clamp(19px,4.4vw,25px);
+  text-transform:uppercase;line-height:1.15;
+  text-decoration-color:var(--crimson);text-decoration-thickness:3px;
+  display:inline-block;margin-bottom:10px;
+}
+.myth p{margin:0}
+
+/* ---------- статьи ---------- */
+.blog{background:var(--bone)}
+.posts{display:grid;gap:24px;margin-top:36px}
+@media(min-width:760px){.posts{grid-template-columns:repeat(3,1fr)}}
+.post{text-decoration:none;display:block}
+.post .photo{aspect-ratio:4/5;margin-bottom:14px}
+.post .photo::after{display:none}
+.post h3{font-size:19px;margin-bottom:6px}
+.post .meta{font-size:14px;color:#6b4650}
+
+/* ---------- контакты ---------- */
+.contacts{background:var(--bordeaux);color:var(--white)}
+.c-grid{display:grid;gap:36px;margin-top:36px}
+@media(min-width:900px){.c-grid{grid-template-columns:1fr 1fr;gap:56px}}
+.big-tel{
+  font-family:var(--display);font-weight:700;font-size:clamp(30px,7.5vw,46px);
+  text-decoration:none;display:inline-block;margin-bottom:6px;line-height:1.05;
+}
+.links{list-style:none;padding:0;margin:26px 0 0}
+.links li{padding:13px 0;border-top:1px solid rgba(255,255,255,.2)}
+.links li:last-child{border-bottom:1px solid rgba(255,255,255,.2)}
+.links a{font-family:var(--display);font-weight:500;font-size:17px;text-transform:uppercase;letter-spacing:.02em;text-decoration:none}
+.links .note{display:block;font-family:var(--text);font-weight:400;font-size:13px;text-transform:none;letter-spacing:0;color:rgba(255,255,255,.6);margin-top:2px}
+.hours{font-size:15px;color:rgba(255,255,255,.82)}
+.map{background:rgba(255,255,255,.07);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;font-family:var(--hand);font-size:22px;color:rgba(255,255,255,.5)}
+
+/* ---------- футер ---------- */
+footer{background:var(--bordeaux-deep);color:rgba(255,255,255,.62);font-size:13px;line-height:1.55}
+footer .wrap{padding-top:36px;padding-bottom:44px}
+footer p{max-width:46rem;margin:0 0 12px}
+footer a{color:rgba(255,255,255,.62)}
+.legal{padding:14px 0;margin-bottom:18px;border-bottom:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8)}
+
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<a class="skip" href="#hero">Перейти к содержанию</a>
+
+<header class="top" id="top">
+  <div class="wrap">
+    <a href="/" class="mark">Врач-педиатр <span class="ph">Фамилия И. О.</span></a>
+    <a href="tel:+70000000000" class="tel"><span class="ph">+7 000 000-00-00</span></a>
+  </div>
+</header>
+
+<main>
+
+<!-- HERO -->
+<section class="hero on-dark" id="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <ul class="pills">
+        <li class="pill">врач-педиатр</li>
+        <li class="pill">стаж <span class="ph">00 лет</span></li>
+        <li class="pill"><span class="ph">Город</span></li>
+      </ul>
+      <h1 class="d-xl">
+        Лечим ребёнка,<br>а не анализы
+        <span class="sub"><span class="br">[</span>онлайн, выезд на дом, приём в клинике<span class="br">]</span></span>
+      </h1>
+      <p class="lead" style="margin-top:24px">
+        Разбираю ситуацию целиком: что беспокоит, что уже принимали, какие обследования
+        действительно нужны. Назначаю то, что меняет исход, и объясняю, почему.
+      </p>
+      <div class="cta">
+        <a class="btn btn-p" href="#contacts">Записаться на приём</a>
+        <a class="btn btn-s" href="#about">Об образовании</a>
+      </div>
+    </div>
+    <div class="photo"><span>фото 3:4, ч/б</span></div>
+  </div>
+</section>
+
+<!-- ФОРМАТЫ ПРИЁМА -->
+<section class="formats" id="formats">
+  <div class="wrap">
+    <h2 class="d-l">
+      Три формата
+      <span class="sub"><span class="br">[</span>что выбрать и как записаться<span class="br">]</span></span>
+    </h2>
+    <div class="cards">
+      <article class="card">
+        <h3>Онлайн-консультация</h3>
+        <p>Разбор жалоб, расшифровка анализов, второе мнение по уже назначенному лечению. Подходит, когда осмотр не требуется.</p>
+        <p class="when"><span class="ph">00 минут · формат связи</span></p>
+        <p class="price"><span class="ph">0 000 ₽</span></p>
+      </article>
+      <article class="card">
+        <h3>Выезд на дом</h3>
+        <p>Осмотр ребёнка дома в день обращения. Актуально при температуре, когда везти в клинику не стоит.</p>
+        <p class="when"><span class="ph">районы выезда · время</span></p>
+        <p class="price"><span class="ph">0 000 ₽</span></p>
+      </article>
+      <article class="card">
+        <h3>Приём в клинике</h3>
+        <p>Полный осмотр с оборудованием: отоскопия, аускультация, при необходимости экспресс-тесты.</p>
+        <p class="when"><span class="ph">адрес клиники · дни приёма</span></p>
+        <p class="price"><span class="ph">0 000 ₽</span></p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- О ВРАЧЕ -->
+<section class="about" id="about">
+  <div class="wrap about-grid">
+    <div class="photo"><span>портрет, ч/б</span></div>
+    <div>
+      <h2 class="d-l">
+        Мои <span class="br">[</span>принципы<span class="br">]</span> работы
+      </h2>
+      <p style="margin-top:22px">
+        <span class="ph">Два-три абзаца от первого лица: почему пошла в педиатрию, как относится
+        к назначениям, что считает главным в работе с родителями. Берём из закреплённого поста
+        «Куда вы попали» — он уже написан её голосом.</span>
+      </p>
+      <dl class="creds">
+        <div><dt>Образование</dt><dd><span class="ph">вуз, год выпуска</span></dd></div>
+        <div><dt>Специализация</dt><dd><span class="ph">ординатура, год</span></dd></div>
+        <div><dt>Категория</dt><dd><span class="ph">квалификационная категория</span></dd></div>
+        <div><dt>Стаж</dt><dd><span class="ph">00 лет, из них 00 в частной практике</span></dd></div>
+        <div><dt>Повышение</dt><dd><span class="ph">курсы и сертификаты за последние 3 года</span></dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- С ЧЕМ ОБРАЩАЮТСЯ -->
+<section class="topics on-dark" id="topics">
+  <div class="wrap">
+    <h2 class="d-l">
+      С чем ко мне приходят
+      <span class="sub"><span class="br">[</span>список не исчерпывающий — спросите, если вашего случая тут нет<span class="br">]</span></span>
+    </h2>
+    <ul class="tags">
+      <li class="tag">частые ОРВИ</li>
+      <li class="tag">длительный кашель</li>
+      <li class="tag">боли в животе</li>
+      <li class="tag">атопический дерматит</li>
+      <li class="tag">аденоиды</li>
+      <li class="tag">температура без причины</li>
+      <li class="tag">сыпь</li>
+      <li class="tag">плохой аппетит</li>
+      <li class="tag">расшифровка анализов</li>
+      <li class="tag">второе мнение</li>
+      <li class="tag ph">добавить свои</li>
+    </ul>
+  </div>
+</section>
+
+<!-- КАК ПРОХОДИТ ПРИЁМ -->
+<section class="steps" id="steps">
+  <div class="wrap">
+    <h2 class="d-l">Как проходит приём</h2>
+    <ol class="steps-list" style="margin-top:32px">
+      <li class="step"><div class="n" aria-hidden="true">1</div><p>Записываетесь по телефону или в мессенджере. Спрошу возраст ребёнка и что беспокоит — от этого зависит формат.</p></li>
+      <li class="step"><div class="n" aria-hidden="true">2</div><p>Присылаете заранее выписки и результаты анализов, если они есть. Так на приёме останется время на разговор, а не на чтение бумаг.</p></li>
+      <li class="step"><div class="n" aria-hidden="true">3</div><p>Приём: <span class="ph">00 минут</span>. Расспрос, осмотр, обсуждение вариантов.</p></li>
+      <li class="step"><div class="n" aria-hidden="true">4</div><p>Получаете письменное заключение с назначениями и объяснением, что делать при ухудшении.</p></li>
+      <li class="step"><div class="n" aria-hidden="true">5</div><p>Остаюсь на связи <span class="ph">00 дней</span> по вопросам, связанным с этим обращением.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- МИФЫ -->
+<section class="myths" id="myths">
+  <div class="wrap">
+    <h2 class="d-l">
+      Что я делать не буду
+      <span class="sub"><span class="br">[</span>и объясню почему<span class="br">]</span></span>
+    </h2>
+    <ul class="myth-list">
+      <li class="myth">
+        <p class="myth-claim"><span class="vh">Не буду: </span><s>Назначу анализы «на всякий случай»</s></p>
+        <p><span class="ph">Пояснение врача. Тезис берём из поста «9 анализов, которые я никогда не назначу».</span></p>
+      </li>
+      <li class="myth">
+        <p class="myth-claim"><span class="vh">Не буду: </span><s>Пропишу иммуномодулятор от частых ОРВИ</s></p>
+        <p><span class="ph">Пояснение врача.</span></p>
+      </li>
+      <li class="myth">
+        <p class="myth-claim"><span class="vh">Не буду: </span><s>Пообещаю результат к конкретной дате</s></p>
+        <p><span class="ph">Пояснение врача.</span></p>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- СТАТЬИ -->
+<section class="blog" id="blog">
+  <div class="wrap">
+    <h2 class="d-l">
+      Разборы для родителей
+      <span class="sub"><span class="br">[</span>то, что чаще всего спрашивают на приёме<span class="br">]</span></span>
+    </h2>
+    <div class="posts">
+      <a class="post" href="#"><div class="photo"><span>обложка</span></div><h3><span class="ph">Заголовок разбора</span></h3><p class="meta">Чтение 6 минут</p></a>
+      <a class="post" href="#"><div class="photo"><span>обложка</span></div><h3><span class="ph">Заголовок разбора</span></h3><p class="meta">Чтение 4 минуты</p></a>
+      <a class="post" href="#"><div class="photo"><span>обложка</span></div><h3><span class="ph">Заголовок разбора</span></h3><p class="meta">Чтение 8 минут</p></a>
+    </div>
+  </div>
+</section>
+
+<!-- КОНТАКТЫ -->
+<section class="contacts on-dark" id="contacts">
+  <div class="wrap">
+    <h2 class="d-l">
+      Записаться
+      <span class="sub"><span class="br">[</span>отвечаю лично, обычно в течение дня<span class="br">]</span></span>
+    </h2>
+    <div class="c-grid">
+      <div>
+        <a class="big-tel" href="tel:+70000000000"><span class="ph">+7 000 000-00-00</span></a>
+        <p class="hours"><span class="ph">Часы, когда удобно звонить</span></p>
+        <ul class="links">
+          <li><a href="#">ВКонтакте<span class="note">основной канал для сообщений</span></a></li>
+          <li><a href="#">Telegram<span class="note">работает нестабильно из-за ограничений</span></a></li>
+          <li><a href="#">MAX<span class="note"><span class="ph">если у врача есть — иначе строку убрать</span></span></a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="map">карта клиники</div>
+        <p class="hours" style="margin-top:14px"><span class="ph">Адрес клиники, как найти вход, парковка</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer id="legal">
+  <div class="wrap">
+    <p class="legal">Имеются противопоказания. Необходима консультация специалиста.</p>
+    <p>Медицинские услуги оказываются <span class="ph">наименование клиники</span>. Лицензия <span class="ph">№ 00-00-000000 от 00.00.0000</span>, выдана <span class="ph">органом</span>.</p>
+    <p>Информация на сайте носит справочный характер и не заменяет очную консультацию врача. Диагноз ставится только на приёме.</p>
+    <p><span class="ph">ИП / самозанятый, ИНН</span> · <a href="#" class="ph">Политика обработки персональных данных</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
